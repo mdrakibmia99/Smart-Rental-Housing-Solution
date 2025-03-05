@@ -1,0 +1,21 @@
+Routing
+
+Middleware
+Application-level Middleware
+Router-level Middleware
+Built-in Middleware
+Error-handling Middleware
+
+CORS & Security
+
+Authentication & Authorization
+
+File Uploads (Multer, Cloudinary)
+
+Error Handling Middleware
+
+Input Validation (Express Validator)
+
+Logging & Monitoring 
+
+Performance Optimization

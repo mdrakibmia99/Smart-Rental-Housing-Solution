@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
+//md rakib mia 
+// date:7 march 2025
 import { FilterQuery, Query } from "mongoose";
 
 class QueryBuilder<T> {

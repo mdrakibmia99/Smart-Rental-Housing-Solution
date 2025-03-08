@@ -1,21 +1,27 @@
 import { model, Schema } from 'mongoose';
-import { IUser } from './user.interface';
+import { IUser, UserModel } from './user.interface';
 import config from '../../config';
 import { createHashPassword } from '../../utils/createHashPassword';
-const userSchema = new Schema<IUser>(
+import AppError from '../../errors/AppError';
+import { StatusCodes } from 'http-status-codes';
+import { comparePassword } from '../../utils/comparePassword';
+const userSchema = new Schema<IUser,UserModel>(
   {
     name: {
       type: String,
       required: true,
-    },
-    profileImage:{
-     type: String,
-     default:null
+      trim: true
     },
     email: {
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
+      trim: true
+    },
+    phone: {
+      type: String,
+      required: true,
     },
     password: {
       type: String,
@@ -24,21 +30,17 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['customer', 'admin'],
-      default: 'customer',
+      enum: ["landlord", "tenant"],
+      default: "tenant"
     },
-    isBlocked: {
+    isVerified: {
       type: Boolean,
-      default: false,
+      default: false
     },
-    address: {
-      type: String,
-      default: null,
+    isDelete: {
+      type: Boolean,
+      default: false
     },
-    phone:{
-      type: String,
-      default: null,
-    }
   },
   {
     timestamps: true,
@@ -52,5 +54,30 @@ userSchema.pre('save', async function (next) {
 
   next();
 });
-const User = model('User', userSchema);
+
+userSchema.statics.isPasswordMatched = async function (
+  plainTextPassword,
+  hashedPassword
+) {
+  return await comparePassword(plainTextPassword, hashedPassword);
+};
+
+userSchema.statics.isUserExistsByEmail = async function (email: string) {
+  return await User.findOne({ email }).select('+password');
+};
+
+userSchema.statics.checkUserExist = async function (userId: string) {
+  const existingUser = await this.findById(userId);
+
+  if (!existingUser) {
+     throw new AppError(StatusCodes.NOT_ACCEPTABLE, 'User does not exist!');
+  }
+
+  if (!existingUser.isDelete) {
+     throw new AppError(StatusCodes.NOT_ACCEPTABLE, 'User is deleted by admin!');
+  }
+
+  return existingUser;
+};
+const User = model<IUser,UserModel>('User', userSchema);
 export default User;

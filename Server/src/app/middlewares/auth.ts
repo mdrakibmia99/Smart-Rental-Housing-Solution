@@ -1,53 +1,65 @@
-import { StatusCodes } from 'http-status-codes';
-import AppError from '../errors/AppError';
-import { TUserRole } from '../modules/Auth/auth.validation';
-import catchAsync from '../utils/catchAsync';
-import { NextFunction, Request, Response } from 'express';
-import config from '../config';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import User from '../modules/user/user.model';
+import { NextFunction, Request, Response } from "express";
+import { TUserRole } from "../modules/Auth/auth.validation";
+import catchAsync from "../utils/catchAsync";
+import AppError from "../errors/AppError";
+import { StatusCodes } from "http-status-codes";
+import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
+import config from "../config";
+import User from "../modules/user/user.model";
+
 
 const auth = (...requiredRoles: TUserRole[]) => {
-  // console.log(requiredRoles, 'requiredRoles');
-  return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const getTokenWithBearer = req.headers?.authorization;
-    if (!getTokenWithBearer) {
-      throw new AppError(
-        StatusCodes.UNAUTHORIZED,
-        `You are not authorized to access this route `,
-      );
-    }
-    const token = getTokenWithBearer.split(' ')[1];
-let decoded;
-    try {
-      // check validation for token and decode the token
-       decoded = jwt.verify(
-        token,
-        config.jwt_access_secret as string,
-      ) as JwtPayload;
-    } catch {
-      throw new AppError(StatusCodes.UNAUTHORIZED, 'expired access token');
-    }
+  return catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+       const token = req.headers.authorization;
 
-    //    user check from database
-    const { email, role } = decoded;
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+       if (!token) {
+          throw new AppError(
+             StatusCodes.UNAUTHORIZED,
+             'You are not authorized!'
+          );
+       }
+
+       try {
+          const decoded = jwt.verify(
+             token,
+             config.jwt_access_secret as string
+          ) as JwtPayload;
+
+          const { role, email } = decoded;
+
+          const user = await User.isUserExistsByEmail(email);
+
+          if (!user) {
+             throw new AppError(
+                StatusCodes.NOT_FOUND,
+                'This user is not found!'
+             );
+          }
+
+          if (requiredRoles && !requiredRoles.includes(role)) {
+             throw new AppError(
+                StatusCodes.UNAUTHORIZED,
+                'You are not authorized!'
+             );
+          }
+
+          req.user = decoded as JwtPayload & { role: string };
+          next();
+       } catch (error) {
+          if (error instanceof TokenExpiredError) {
+             return next(
+                new AppError(
+                   StatusCodes.UNAUTHORIZED,
+                   'Token has expired! Please login again.'
+                )
+             );
+          }
+          return next(
+             new AppError(StatusCodes.UNAUTHORIZED, 'Invalid token!')
+          );
+       }
     }
-    // check if the user is blocked
-    if (user.isBlocked) {
-      throw new AppError(StatusCodes.FORBIDDEN, 'This user is blocked');
-    }
-    if (requiredRoles.length > 0 && !requiredRoles.includes(role)) {
-      throw new AppError(
-        StatusCodes.FORBIDDEN,
-        'You are not allowed to access this route',
-      );
-    }
-    req.user = decoded;
-    // console.log(req.user,user,decoded, 'req.user');
-    next();
-  });
+ );
 };
 export default auth;

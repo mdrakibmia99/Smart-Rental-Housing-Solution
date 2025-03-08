@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
+import config from '../config';
 
 
 export const handleCastError = (err: mongoose.Error.CastError, res: Response) => {
@@ -8,6 +9,6 @@ export const handleCastError = (err: mongoose.Error.CastError, res: Response) =>
     message: err.message,
     statusCode: 400,
     error: err,
-    stack: err.stack,
+    stack: config.NODE_ENV === 'development' ? err?.stack : null,
   });
 };

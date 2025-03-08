@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Response } from "express";
+import config from "../config";
 
 
 export const handleValidationError=(err:any,res:Response)=>{
@@ -15,7 +16,7 @@ export const handleValidationError=(err:any,res:Response)=>{
         message: err.message,
         statusCode: 400,
         error: err,
-        stack: err.stack,
+        stack: config.NODE_ENV === 'development' ? err?.stack : null,
         issues: issues
       });
 

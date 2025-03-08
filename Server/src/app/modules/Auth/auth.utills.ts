@@ -1,6 +1,7 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { IJwtPayload } from './auth.interface';
 export const createToken = (
-  jwtPayload: Record<string, unknown>,
+  jwtPayload: IJwtPayload,
   secret: string,
   expiresIn: string | number,
 ) => {

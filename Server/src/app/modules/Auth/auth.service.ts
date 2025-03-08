@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-unused-vars */
-import { Types } from 'mongoose';
-import { IUser } from '../user/user.interface';
+import mongoose, { Types } from 'mongoose';
+import { IUser, UserRole } from '../user/user.interface';
 import User from '../user/user.model';
 import AppError from '../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
@@ -13,65 +13,72 @@ import jwt from 'jsonwebtoken';
 import { Response } from 'express';
 import { createHashPassword } from '../../utils/createHashPassword';
 import { comparePassword } from '../../utils/comparePassword';
+import { IAuth, IJwtPayload } from './auth.interface';
 
 type UserPayload = {
   _id: Types.ObjectId;
   name: string;
   email: string;
 };
-const register = async (payload: IUser): Promise<UserPayload> => {
-  const result = await User.create(payload);
 
-  return result;
-};
-const login = async (payload: { email: string; password: string }) => {
-  // checking if the user is exist in database
-  const user = await User.findOne({ email: payload?.email }).select(
-    '+password',
-  );
+const loginUser = async (payload: IAuth) => {
+  const session = await mongoose.startSession();
 
-  if (!user) {
-    throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+  try {
+    session.startTransaction();
+
+    const user = await User.findOne({ email: payload.email }).select('+password').session(session);
+    if (!user) {
+      throw new AppError(StatusCodes.NOT_FOUND, 'This user is not found!');
+    }
+
+    if (user.isDelete) {
+      throw new AppError(StatusCodes.FORBIDDEN, 'This user is not active!');
+    }
+
+    if (!(await User.isPasswordMatched(payload?.password, user?.password))) {
+      throw new AppError(StatusCodes.FORBIDDEN, 'Password does not match');
+    }
+
+    const jwtPayload: IJwtPayload = {
+      userId: user._id as unknown as string,
+      name: user.name as string,
+      email: user.email as string,
+      isDelete: user.isDelete,
+      role: user?.role as UserRole,
+    };
+
+    const accessToken = createToken(
+      jwtPayload,
+      config.jwt_access_secret as string,
+      config.jwt_access_expires_in as string,
+    );
+    
+    const refreshToken = createToken(
+      jwtPayload,
+      config.jwt_refresh_secret as string,
+      config.jwt_refresh_expires_in as string,
+    );
+    console.log(accessToken,refreshToken,"tokens")
+
+    const updateUserInfo = await User.findByIdAndUpdate(
+      user._id,
+      { lastLogin: Date.now() },
+      { new: true, session },
+    );
+
+    await session.commitTransaction();
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-  // //checking if the password is correct
-  //  console.log(payload, user?.password,"payload")
-  const isPasswordMatched = await bcrypt.compare(
-    payload?.password,
-    user?.password,
-  );
-
-  if (!isPasswordMatched) {
-    throw new AppError(StatusCodes.FORBIDDEN, 'Wrong Password !!');
-  }
-  // // checking if the user is inactive
-  const userStatus = user?.isBlocked;
-
-  if (userStatus) {
-    throw new AppError(StatusCodes.FORBIDDEN, 'This user is blocked ! !');
-  }
-
-  //create token and sent to the  client side
-  const jwtPayload = {
-    name: user?.name,
-    email: user?.email,
-    role: user?.role,
-    userId: user?._id,
-  };
-
-  // const accessToken = jwt.sign(jwtPayload, config.jwt_access_secret as string, { expiresIn: config.jwt_access_expires_in as string });
-  const accessToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_expires_in as string,
-  );
-  // const refreshToken = jwt.sign(jwtPayload, config.jwt_refresh_secret as string, { expiresIn: config.jwt_refresh_expires_in as string });
-  const refreshToken = createToken(
-    jwtPayload,
-    config.jwt_refresh_secret as string,
-    config.jwt_refresh_expires_in as string,
-  );
-
-  return { accessToken, refreshToken, user };
 };
 
 const refreshToken = async (token: string, res: Response) => {
@@ -94,16 +101,18 @@ const refreshToken = async (token: string, res: Response) => {
   }
 
   // // checking if the user is inactive
-  const userStatus = user?.isBlocked;
+  const userStatus = user?.isDelete;
 
   if (userStatus) {
     throw new AppError(StatusCodes.FORBIDDEN, 'This user is blocked ! !');
   }
   //create token and sent to the  client side
   const jwtPayload = {
-    email: user?.email,
-    role: user?.role,
-    userId: user?._id,
+    userId: user._id as unknown as string,
+    name: user.name as string,
+    email: user.email as string,
+    isDelete: user.isDelete,
+    role: user?.role as UserRole,
   };
 
   // const accessToken = jwt.sign(jwtPayload, config.jwt_access_secret as string, { expiresIn: config.jwt_access_expires_in as string });
@@ -156,8 +165,7 @@ const authMe = async (userId: string) => {
 };
 
 export const authService = {
-  register,
-  login,
+  loginUser,
   refreshToken,
   updatePassword,
   profileUpdate,

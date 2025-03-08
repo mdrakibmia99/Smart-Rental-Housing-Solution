@@ -1,13 +1,28 @@
+import { UserRole } from "../user/user.interface";
+
 export const USER_ROLE = {
   // user: 'user',
   admin: 'admin',
   customer: 'customer',
 } as const;
 export type TTokenResponse = {
-  name: string,
-  email: string,
-  role: string,
-  userId: string,
-  iat: number,
-  exp: number,
+  name: string;
+  email: string;
+  role: string;
+  userId: string;
+  iat: number;
+  exp: number;
 };
+
+export interface IAuth {
+  email: string;
+  password: string;
+}
+
+export interface IJwtPayload {
+  userId: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isDelete: boolean;
+}

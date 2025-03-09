@@ -18,11 +18,11 @@ authRouter.post(
   validateRequest(authValidation.loginValidationSchema),
   authController.loginUser,
 );
-// authRouter.post(
-//   '/refresh-token',
-//   validateRequest(authValidation.refreshTokenValidationSchema),
-//   authController.refreshToken,
-// );
+authRouter.post(
+  '/refresh-token',
+  validateRequest(authValidation.refreshTokenValidationSchema),
+  authController.refreshToken,
+);
 // authRouter.patch(
 //   '/update-password',
 //   auth(USER_ROLE.customer, USER_ROLE.admin),

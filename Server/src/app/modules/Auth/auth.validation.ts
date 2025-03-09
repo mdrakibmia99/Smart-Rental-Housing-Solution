@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { USER_ROLE } from './auth.interface';
+import { USER_ROLE } from '../../constants/user';
 const loginValidationSchema = z.object({
   body: z.object({
     email: z

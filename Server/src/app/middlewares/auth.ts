@@ -6,26 +6,27 @@ import { StatusCodes } from "http-status-codes";
 import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
 import config from "../config";
 import User from "../modules/user/user.model";
+import { TTokenResponse } from "../modules/Auth/auth.interface";
 
 
 const auth = (...requiredRoles: TUserRole[]) => {
   return catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-       const token = req.headers.authorization;
+      const getTokenWithBearer = req.headers?.authorization;
 
-       if (!token) {
+       if (!getTokenWithBearer) {
           throw new AppError(
              StatusCodes.UNAUTHORIZED,
              'You are not authorized!'
           );
        }
-
+       const token = getTokenWithBearer.split(' ')[1] || getTokenWithBearer
        try {
           const decoded = jwt.verify(
              token,
              config.jwt_access_secret as string
           ) as JwtPayload;
-
+          
           const { role, email } = decoded;
 
           const user = await User.isUserExistsByEmail(email);
@@ -44,7 +45,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
              );
           }
 
-          req.user = decoded as JwtPayload & { role: string };
+          req.user = decoded as TTokenResponse;
           next();
        } catch (error) {
           if (error instanceof TokenExpiredError) {

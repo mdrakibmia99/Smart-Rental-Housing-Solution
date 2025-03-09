@@ -1,12 +1,13 @@
 import { Router } from "express";
 import auth from "../../middlewares/auth";
 import { adminController } from "./admin.controller";
-import { USER_ROLE } from "../Auth/auth.interface";
+import { USER_ROLE } from "../../constants/user";
+
 
 const adminRouter= Router();
 adminRouter.get(
     '/all-users',
-    auth(USER_ROLE.admin),
+    auth(USER_ROLE.),
     adminController.getUsers
   );
 adminRouter.patch(

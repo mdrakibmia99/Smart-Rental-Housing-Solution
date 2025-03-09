@@ -29,12 +29,12 @@ authRouter.patch(
   validateRequest(authValidation.updatePasswordValidationSchema),
   authController.updatePassword,
 );
-// authRouter.patch(
-//   '/update-profile',
-//   auth(USER_ROLE.customer, USER_ROLE.admin),
-//   validateRequest(userValidation.userProfileValidationSchema),
-//   authController.profileUpdate,
-// );
+authRouter.patch(
+  '/update-profile',
+  auth(USER_ROLE.customer, USER_ROLE.admin),
+  validateRequest(userValidation.userProfileValidationSchema),
+  authController.profileUpdate,
+);
 
 authRouter.post('/logout', authController.logOut);
 export default authRouter;

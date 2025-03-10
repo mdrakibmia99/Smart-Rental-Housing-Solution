@@ -1,34 +1,57 @@
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../utils/catchAsync';
 import { adminService } from './admin.service';
+import sendResponse from '../../utils/sendResponse';
+import { TTokenResponse } from '../Auth/auth.interface';
 
-const blockUser = catchAsync(async (req, res) => {
-  const userId = req.params.userId;
-  const body=req.body;
-  // console.log(body)
-  // console.log(userId,"admin user id")
-  const result= await adminService.blockUser(userId,body);
+const getUsers = catchAsync(async (req, res) => {
+  const queryData = req?.query;
+  const result = await adminService.getUsers(queryData);
+    sendResponse(
+      res,
+      StatusCodes.OK,
+      'All users get successfully',
+      result,
+    );
+});
+
+const updateUserRole=catchAsync(async (req, res) => {
+  const userId = req.params.id;
+  const role=req.body.role;
+  const result = await adminService.updateUserRole(userId,role);
+  sendResponse(
+    res,
+    StatusCodes.OK,
+    'updated user role  successfully',
+    result,
+  );
+
+})
+const deleteUser = catchAsync(async (req, res) => {
+  const userId = req.params.id;
+  const result= await adminService.deleteUser(userId);
   res.status(StatusCodes.OK).json({
     success: true,
-    message: 'User blocked successfully',
+    message: 'User deleted successfully',
     statusCode: StatusCodes.OK,
     data:result
   });
 });
-const getUsers = catchAsync(async (req, res) => {
-  const queryData = req?.query;
-  //  get bike use bike service function
-  const result = await adminService.getUsers(queryData);
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'All users get successfully',
-    statusCode: StatusCodes.OK,
-    data: result.result,
-    meta:result.meta
-  });
+
+const adminGetAllLandLordListing = catchAsync(async (req, res) => {
+  const query = req.query;
+  const result = await adminService.adminGetAllLandLordListing(req.user as TTokenResponse,query);
+  sendResponse(
+    res,
+    StatusCodes.OK,
+    'Retrieve all rental listings posted by the landlord',
+    result,
+  );
 });
 
 export const adminController = {
-  blockUser,
-  getUsers
+  deleteUser,
+  getUsers,
+  updateUserRole,
+  adminGetAllLandLordListing
 };

@@ -39,10 +39,21 @@ const deleteLandLordListing = catchAsync(async (req, res) => {
     result,
   );
 });
+const updateLandLordListing = catchAsync(async (req, res) => {
+    const listingsId = req.params.id;
+  const result = await landlordService.updateLandLordListing(listingsId,req?.body);
+  sendResponse(
+    res,
+    StatusCodes.OK,
+    'Updated rental listing successfully',
+    result,
+  );
+});
 
 export const landlordController = {
   createLandlordsListing,
   getAllLandLordListing,
   getSingleLandLordListing,
-  deleteLandLordListing
+  deleteLandLordListing,
+  updateLandLordListing
 };

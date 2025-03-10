@@ -10,10 +10,8 @@ const landlordSchema = new Schema<ILandlord>(
     bedrooms: { type: Number, required: true, min: 1 },
     amenities: [{ type: String }], // List of amenities (e.g., ["WiFi", "Parking"])
     landlord: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    contact: {
-      phone: { type: String, required: true },
-      email: { type: String, required: true },
-    },
+    phone: { type: String, required: true },
+    email: { type: String, required: true },
     isAvailable: { type: Boolean, default: true },
   },
   { timestamps: true },

@@ -27,12 +27,14 @@ const loginUser = async (payload: IAuth) => {
   try {
     session.startTransaction();
 
-    const user = await User.findOne({ email: payload.email }).select('+password').session(session);
+    const user = await User.findOne({ email: payload.email })
+      .select('+password')
+      .session(session);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, 'This user is not found!');
     }
 
-    if (user.isDelete) {
+    if (user.isBlocked) {
       throw new AppError(StatusCodes.FORBIDDEN, 'This user is not active!');
     }
 
@@ -44,7 +46,7 @@ const loginUser = async (payload: IAuth) => {
       userId: user._id as unknown as string,
       name: user.name as string,
       email: user.email as string,
-      isDelete: user.isDelete,
+      isBlocked: user.isBlocked,
       role: user?.role as UserRole,
     };
 
@@ -53,13 +55,13 @@ const loginUser = async (payload: IAuth) => {
       config.jwt_access_secret as string,
       config.jwt_access_expires_in as string,
     );
-    
+
     const refreshToken = createToken(
       jwtPayload,
       config.jwt_refresh_secret as string,
       config.jwt_refresh_expires_in as string,
     );
-    console.log(accessToken,refreshToken,"tokens")
+    console.log(accessToken, refreshToken, 'tokens');
 
     const updateUserInfo = await User.findByIdAndUpdate(
       user._id,
@@ -101,7 +103,7 @@ const refreshToken = async (token: string, res: Response) => {
   }
 
   // // checking if the user is inactive
-  const userStatus = user?.isDelete;
+  const userStatus = user?.isBlocked;
 
   if (userStatus) {
     throw new AppError(StatusCodes.FORBIDDEN, 'This user is blocked ! !');
@@ -111,7 +113,7 @@ const refreshToken = async (token: string, res: Response) => {
     userId: user._id as unknown as string,
     name: user.name as string,
     email: user.email as string,
-    isDelete: user.isDelete,
+    isBlocked: user.isBlocked,
     role: user?.role as UserRole,
   };
 
@@ -152,22 +154,12 @@ const updatePassword = async (
     password: newPassword,
   });
 };
-const profileUpdate = async (
-  userId: string,
-  payload: Record<string, unknown>,
-) => {
-  const result = await User.findByIdAndUpdate(userId, payload, { new: true });
-  return result;
-};
-const authMe = async (userId: string) => {
-  const user = await User.findById(userId).select('-password');
-  return user;
-};
+
+
 
 export const authService = {
   loginUser,
   refreshToken,
   updatePassword,
-  profileUpdate,
-  authMe,
+
 };

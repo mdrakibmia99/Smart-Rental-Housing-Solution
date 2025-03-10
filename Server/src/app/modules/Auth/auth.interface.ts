@@ -20,5 +20,5 @@ export interface IJwtPayload {
   name: string;
   email: string;
   role: UserRole;
-  isDelete: boolean;
+  isBlocked: boolean;
 }

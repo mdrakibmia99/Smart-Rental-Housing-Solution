@@ -24,15 +24,15 @@ const getAllRentalRequest = async (
   query: Record<string, unknown>,
 ) => {
   const searchableFields = ['additionalMessage'];
-  const bikeQuery = new QueryBuilder(Tenant.find({ tenantId }).populate('rentalHouseId tenantId'), query)
+  const tenantQuery = new QueryBuilder(Tenant.find({ tenantId }).populate('rentalHouseId tenantId'), query)
     .search(searchableFields)
     .filter()
     .sort()
     .paginate()
     .fields();
 
-  const result = await bikeQuery.modelQuery;
-  const meta = await bikeQuery.countTotal();
+  const result = await tenantQuery.modelQuery;
+  const meta = await tenantQuery.countTotal();
   return {
     meta,
     result,

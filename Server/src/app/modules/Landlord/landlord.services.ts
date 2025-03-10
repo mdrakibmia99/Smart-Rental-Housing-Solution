@@ -13,31 +13,9 @@ const getAllLandLordListing = async (
   user: TTokenResponse,
   query: Record<string, unknown>,
 ) => {
-  if (user.role === 'admin') {
-    const searchableFields = [
-      'location',
-      'description',
-      'bedrooms',
-      'amenities',
-    ];
-    const bikeQuery = new QueryBuilder(Landlord.find(), query)
-      .search(searchableFields)
-      .filter()
-      .sort()
-      .paginate()
-      .fields();
-
-    const result = await bikeQuery.modelQuery;
-    const meta = await bikeQuery.countTotal();
-    return {
-      meta,
-      result,
-    };
-  }
-
   const searchableFields = ['location', 'description', 'bedrooms', 'amenities'];
-  const bikeQuery = new QueryBuilder(
-    Landlord.find({ landlord: user.userId }),
+  const landlordQuery = new QueryBuilder(
+    Landlord.find({ landlord: user.userId  }),
     query,
   )
     .search(searchableFields)
@@ -46,8 +24,8 @@ const getAllLandLordListing = async (
     .paginate()
     .fields();
 
-  const result = await bikeQuery.modelQuery;
-  const meta = await bikeQuery.countTotal();
+  const result = await landlordQuery.modelQuery;
+  const meta = await landlordQuery.countTotal();
   return {
     meta,
     result,
@@ -57,6 +35,7 @@ const getSingleLandLordListing = async (id: string) => {
   const result = await Landlord.findById(id);
   return result;
 };
+
 const deleteLandLordListing = async (user: TTokenResponse, id: string) => {
   //   const result = await Landlord.findByIdAndDelete(id);
   const listingData = await Landlord.findById(id);
@@ -67,7 +46,6 @@ const deleteLandLordListing = async (user: TTokenResponse, id: string) => {
     user.role === 'admin' ||
     (listingData?.landlord as unknown as string) == user?.userId
   ) {
-    console.log('yes');
     await Landlord.findByIdAndDelete(id);
   } else {
     throw new AppError(
@@ -79,9 +57,36 @@ const deleteLandLordListing = async (user: TTokenResponse, id: string) => {
   return {};
 };
 
+const updateLandLordListing = async (id: string, payload: ILandlord) => {
+  const result = await Landlord.findByIdAndUpdate(
+    { _id: id },
+    {
+      $set: {
+        ...(payload?.location && { location: payload.location }),
+        ...(payload?.description && { description: payload.description }),
+        ...(payload?.images?.length > 0 && { images: payload.images }),
+        ...(Number(payload?.rent) > 0 && { rent: payload.rent }),
+        ...(Number(payload?.rent) > 0 && { bedrooms: payload.bedrooms }),
+        ...(payload?.amenities && payload?.amenities?.length > 0 && { amenities: payload.amenities }),
+          
+        ...(payload?.phone && { phone: payload.phone }),
+        ...(payload?.email && { email: payload.email }),
+        ...(payload.bedrooms < 1
+          ? { isAvailable: false }
+          : { isAvailable: true }),
+      },
+    },
+    {
+      new: true,
+    },
+  );
+  return result;
+};
+
 export const landlordService = {
   createLandlordsListing,
   getAllLandLordListing,
   getSingleLandLordListing,
   deleteLandLordListing,
+  updateLandLordListing
 };

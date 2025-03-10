@@ -10,11 +10,15 @@ export enum UserRole {
 export interface IUser {
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   password: string;
   role: 'landlord' | 'tenant';
   isVerified: boolean;
-  isDelete: boolean;
+  isBlocked: boolean;
+  address?: string | null;
+  city?: string | null;
+  image?: string | null;
+  lastLogin?: Date;
   createdAt?: Date;
 }
 
@@ -27,3 +31,5 @@ export interface UserModel extends Model<IUser> {
   isUserExistsByEmail(id: string): Promise<IUser>;
   checkUserExist(userId: string): Promise<IUser>;
 }
+
+

@@ -11,6 +11,20 @@ const createUser = async (payload: IUser): Promise<UserPayload> => {
   return result;
 };
 
+const authMe = async (userId: string) => {
+  const user = await User.findById(userId).select('-password');
+  return user;
+};
+const profileUpdate = async (
+  userId: string,
+  payload: Record<string, unknown>,
+) => {
+  const result = await User.findByIdAndUpdate(userId, payload, { new: true });
+  return result;
+};
+
 export const userService = {
   createUser,
+  authMe,
+  profileUpdate
 };

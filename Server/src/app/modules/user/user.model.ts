@@ -5,24 +5,21 @@ import { createHashPassword } from '../../utils/createHashPassword';
 import AppError from '../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
 import { comparePassword } from '../../utils/comparePassword';
-const userSchema = new Schema<IUser,UserModel>(
+const userSchema = new Schema<IUser, UserModel>(
   {
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
-      trim: true
+      trim: true,
     },
-    phone: {
-      type: String,
-      required: true,
-    },
+
     password: {
       type: String,
       required: true,
@@ -30,17 +27,29 @@ const userSchema = new Schema<IUser,UserModel>(
     },
     role: {
       type: String,
-      enum: ["landlord", "tenant"],
-      default: "tenant"
+      enum: ['landlord', 'tenant'],
+      default: 'tenant',
     },
     isVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
-    isDelete: {
+    phone: {
+      type: String,
+      default: null,
+    },
+    address: { type: String, default: null },
+    city: { type: String, default: null },
+    image: { type: String, default: null },
+
+    isBlocked: {
       type: Boolean,
-      default: false
+      default: false,
     },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+   },
   },
   {
     timestamps: true,
@@ -57,7 +66,7 @@ userSchema.pre('save', async function (next) {
 
 userSchema.statics.isPasswordMatched = async function (
   plainTextPassword,
-  hashedPassword
+  hashedPassword,
 ) {
   return await comparePassword(plainTextPassword, hashedPassword);
 };
@@ -70,14 +79,14 @@ userSchema.statics.checkUserExist = async function (userId: string) {
   const existingUser = await this.findById(userId);
 
   if (!existingUser) {
-     throw new AppError(StatusCodes.NOT_ACCEPTABLE, 'User does not exist!');
+    throw new AppError(StatusCodes.NOT_ACCEPTABLE, 'User does not exist!');
   }
 
-  if (!existingUser.isDelete) {
-     throw new AppError(StatusCodes.NOT_ACCEPTABLE, 'User is deleted by admin!');
+  if (!existingUser.isBlocked) {
+    throw new AppError(StatusCodes.NOT_ACCEPTABLE, 'User is blocked by admin!');
   }
 
   return existingUser;
 };
-const User = model<IUser,UserModel>('User', userSchema);
+const User = model<IUser, UserModel>('User', userSchema);
 export default User;

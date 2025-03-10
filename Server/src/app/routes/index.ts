@@ -3,6 +3,7 @@ import authRouter from "../modules/Auth/auth.router";
 // import adminRouter from "../modules/Admin/admin.router";
 import userRouter from "../modules/user/user.router";
 import landLordRouter from "../modules/Landlord/landlord.router";
+import TenantRouter from "../modules/Tenant/tenant.router";
 
 
 
@@ -24,7 +25,11 @@ const moduleRoutes=[
     {
         path:"/landlords",
         route:landLordRouter
-    }
+    },
+    {
+        path:"/tenants",
+        route:TenantRouter
+    },
 
 
 ]

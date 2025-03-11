@@ -8,7 +8,7 @@ import { FieldValues } from "react-hook-form";
 
 export const registerUser = async (userData: FieldValues) => {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/user/register`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/users/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -17,8 +17,9 @@ export const registerUser = async (userData: FieldValues) => {
         });
         const result = await res.json();
 
-        if (result?.status) {
-            (await cookies()).set("accessToken", result?.data?.token);
+        if (result?.success) {
+            (await cookies()).set("accessToken", result?.data?.accessToken);
+            (await cookies()).set("refreshToken", result?.data?.refreshToken);
         }
 
         return result;
@@ -29,7 +30,7 @@ export const registerUser = async (userData: FieldValues) => {
 
 export const loginUser = async (userData: FieldValues) => {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/user/login`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -38,8 +39,9 @@ export const loginUser = async (userData: FieldValues) => {
         })
         const result = await res.json();
 
-        if (result?.status) {
-            (await cookies()).set("accessToken", result?.data?.token);
+        if (result?.success) {
+            (await cookies()).set("accessToken", result?.data?.accessToken);
+            (await cookies()).set("refreshToken", result?.data?.refreshToken);
         }
         return result
     } catch (error: any) {
@@ -53,7 +55,7 @@ export const getCurrentUser = async () => {
 
     if (accessToken) {
         decodedData = await jwtDecode(accessToken);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/user/${decodedData?.id}`,
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/${decodedData?.id}`,
             {
                 next: {
                     tags: ["USER"]
@@ -77,7 +79,7 @@ export const logout = async () => {
 
 export const updateProfile = async (userData: FieldValues) => {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/user/update-profile`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/update-profile`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",

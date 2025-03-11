@@ -2,17 +2,24 @@ import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import { userService } from './user.service';
+import config from '../../config';
 
 const createUser = catchAsync(async (req, res) => {
   const result = await userService.createUser(req.body);
-  const { _id, name, email } = result;
+
+  const { refreshToken, accessToken } = result;
+
+  res.cookie('accessToken', accessToken, {
+    secure: config.NODE_ENV !== 'development',
+    httpOnly: true,
+    sameSite: 'none',
+    maxAge: 1000 * 60 * 60 * 24 * 365,
+  });
   sendResponse(res, StatusCodes.CREATED, 'User created successfully', {
-    _id,
-    name,
-    email,
+    accessToken,
+    refreshToken,
   });
 });
-
 
 const authMe = catchAsync(async (req, res) => {
   const userId = req?.user?.userId;
@@ -35,5 +42,5 @@ const profileUpdate = catchAsync(async (req, res) => {
 export const userController = {
   createUser,
   authMe,
-  profileUpdate
+  profileUpdate,
 };

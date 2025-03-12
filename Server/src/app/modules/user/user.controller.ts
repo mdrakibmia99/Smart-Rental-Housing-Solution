@@ -22,6 +22,7 @@ const createUser = catchAsync(async (req, res) => {
 });
 
 const authMe = catchAsync(async (req, res) => {
+  console.log('auth me')
   const userId = req?.user?.userId;
   const result = await userService.authMe(userId as string);
   sendResponse(

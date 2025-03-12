@@ -21,7 +21,7 @@ import Logo from "@/assets/logo/basaFinder-logo.png";
 import { useUser } from "@/userContextApi/userProvider";
 
 export default function Navbar() {
-  const { user, setIsLoading } = useUser();
+  const { user, setIsLoading ,handleUser} = useUser();
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +29,7 @@ export default function Navbar() {
   const handleLogOut = () => {
     logout();
     setIsLoading(true);
+    handleUser();
     if (protectedRoutes.some((route) => pathname.match(route))) {
       router.push("/");
     }
@@ -46,8 +47,8 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex gap-6">
           <Link href="/" className="hover:text-primary transition">Home</Link>
-          <Link href="/about" className="hover:text-primary transition">About</Link>
           <Link href="/listings" className="hover:text-primary transition">Listings</Link>
+          <Link href="/about" className="hover:text-primary transition">About</Link>
           <Link href="/contact" className="hover:text-primary transition">Contact</Link>
         </nav>
 
@@ -65,7 +66,7 @@ export default function Navbar() {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <Link href="/profile">Profile</Link>
+                  <Link href={`/${user?.role}/profile`}>Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Link href={`/${user?.role}/dashboard`}>Dashboard</Link>
@@ -94,8 +95,8 @@ export default function Navbar() {
         <div className="md:hidden bg-background border-t p-4 absolute w-full left-0 top-16 shadow-md">
           <nav className="flex flex-col gap-4 text-center">
             <Link href="/" onClick={() => setIsOpen(false)}>Home</Link>
-            <Link href="/about" onClick={() => setIsOpen(false)}>About</Link>
             <Link href="/listings" onClick={() => setIsOpen(false)}>Listings</Link>
+            <Link href="/about" onClick={() => setIsOpen(false)}>About</Link>
             <Link href="/contact" onClick={() => setIsOpen(false)}>Contact</Link>
           </nav>
           {user?.email ? (

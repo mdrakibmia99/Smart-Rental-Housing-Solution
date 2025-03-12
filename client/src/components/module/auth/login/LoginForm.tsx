@@ -20,7 +20,6 @@ import { loginUser } from "@/services/AuthService";
 import { useUser } from "@/userContextApi/userProvider";
 import { PasswordInput } from "@/components/ui/password-input";
 
-
 export default function LoginForm() {
   const form = useForm({
     resolver: zodResolver(loginSchema),
@@ -29,24 +28,25 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirectPath");
   const router = useRouter();
-  
-  
+
   const {
     formState: { isSubmitting },
   } = form;
 
-  const { setIsLoading } = useUser();
+  const { setIsLoading, user, isLoading, handleUser } = useUser();
 
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     try {
       console.log(data, "from");
 
       const res = await loginUser(data);
-      setIsLoading(true);
-        console.log(res, "res");
-      if (res?.success) {
 
+      setIsLoading(true);
+      handleUser();
+
+      if (res?.success) {
         toast.success(res?.message);
+        console.log(user, isLoading, "user");
 
         if (redirect) {
           router.push(redirect);
@@ -63,11 +63,15 @@ export default function LoginForm() {
   };
 
   return (
-    <div className={`border rounded flex-grow max-w-md w-full p-5 transition-all duration-300  'bg-white border-gray-300 text-black`}>
+    <div
+      className={`border rounded flex-grow max-w-md w-full p-5 transition-all duration-300  'bg-white border-gray-300 text-black`}
+    >
       <div className="flex items-center justify-between mb-4 space-x-4">
-        <Link href={'/'} className="text-2xl font-bold flex items-center gap-2">
+        <Link href={"/"} className="text-2xl font-bold flex items-center gap-2">
           <span>🏠</span>
-          <h1>Rental<span className="text-cyan-900">Hub</span></h1>
+          <h1>
+            Rental<span className="text-cyan-900">Hub</span>
+          </h1>
         </Link>
         <div>
           <h1 className="text-xl font-semibold">Login</h1>
@@ -83,7 +87,12 @@ export default function LoginForm() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" {...field} value={field.value || ""} className="bg-transparent border-gray-500" />
+                  <Input
+                    type="email"
+                    {...field}
+                    value={field.value || ""}
+                    className="bg-transparent border-gray-500"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -96,7 +105,11 @@ export default function LoginForm() {
               <FormItem>
                 <FormLabel className="mt-3">Password</FormLabel>
                 <FormControl>
-                  <PasswordInput {...field} value={field.value || ""} className="bg-transparent border-gray-500" />
+                  <PasswordInput
+                    {...field}
+                    value={field.value || ""}
+                    className="bg-transparent border-gray-500"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -112,9 +125,9 @@ export default function LoginForm() {
         </form>
       </Form>
       <p className="text-sm text-gray-400 text-center my-3">
-        Do not have an account? 
-         <Link href="/register" className="text-cyan-900 hover:underline">
-           Register
+        Do not have an account?
+        <Link href="/register" className="text-cyan-900 hover:underline">
+          Register
         </Link>
       </p>
     </div>

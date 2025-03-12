@@ -1,8 +1,10 @@
 "use client";
 
+
 import { motion } from "motion/react";
 
 export default function Loading() {
+
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <motion.div

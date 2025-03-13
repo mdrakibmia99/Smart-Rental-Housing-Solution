@@ -4,6 +4,7 @@
 import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { FieldValues } from "react-hook-form";
+import { jwtDecode } from "jwt-decode";
 
 export const registerUser = async (userData: FieldValues) => {
     try {
@@ -48,7 +49,7 @@ export const loginUser = async (userData: FieldValues) => {
     }
 }
 
-export const getCurrentUser = async () => {
+export const getCurrentUserDetails = async () => {
     const accessToken = (await cookies()).get("accessToken")?.value;
     if (accessToken) {
 
@@ -69,6 +70,17 @@ export const getCurrentUser = async () => {
         return null;
     }
 };
+export const getCurrentUser = async () => {
+    const accessToken = (await cookies()).get("accessToken")?.value;
+    let decodedData = null;
+  
+    if (accessToken) {
+      decodedData = await jwtDecode(accessToken);
+      return decodedData;
+    } else {
+      return null;
+    }
+  };
 
 export const logout = async () => {
     (await cookies()).delete("accessToken");

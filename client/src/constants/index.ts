@@ -4,4 +4,6 @@ export const protectedRoutes = [
     "/admin/:page",
     "/landlord",
     "/landlord/:page",
+    "/tenant",
+    "/tenant/:page",
   ];

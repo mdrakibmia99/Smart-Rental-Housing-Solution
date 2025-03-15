@@ -30,6 +30,7 @@ import { NavUser } from "./nav-user";
 import Link from "next/link";
 import Logo from "@/assets/logo/basaFinder-logo.png";
 import Image from "next/image";
+import { useUser } from "@/userContextApi/userProvider";
 
 const adminData = {
   navMain: [
@@ -165,6 +166,17 @@ const tenantData = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const {user}=useUser();
+   const userRole= user?.role
+    // Role অনুযায়ী data সেট করা
+  let navData;
+  if (userRole === "admin") {
+    navData = adminData;
+  } else if (userRole === "landlord") {
+    navData = landlordData;
+  } else {
+    navData = tenantData; // Default tenant
+  }
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -193,7 +205,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={tenantData.navMain} />
+        <NavMain items={navData.navMain} />
         {/* <NavMain items={data.navSecondary} /> */}
       </SidebarContent>
       <SidebarFooter>

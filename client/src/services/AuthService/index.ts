@@ -104,3 +104,20 @@ export const updateProfile = async (userData: FieldValues) => {
         return Error(error);
     }
 }
+export const updatePassword = async (userData: FieldValues) => {
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/update-password`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: (await cookies()).get("accessToken")!.value,
+            },
+            body: JSON.stringify(userData),
+        })
+        const result = await res.json();
+        revalidateTag("USER")
+        return result
+    } catch (error: any) {
+        return Error(error);
+    }
+}

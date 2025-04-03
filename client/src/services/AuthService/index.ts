@@ -52,7 +52,6 @@ export const loginUser = async (userData: FieldValues) => {
 export const getCurrentUserDetails = async () => {
     const accessToken = (await cookies()).get("accessToken")?.value;
     if (accessToken) {
-
         const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/users/me`,
             {
                 next: {
@@ -89,7 +88,7 @@ export const logout = async () => {
 
 export const updateProfile = async (userData: FieldValues) => {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/update-profile`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/users/update-profile`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",

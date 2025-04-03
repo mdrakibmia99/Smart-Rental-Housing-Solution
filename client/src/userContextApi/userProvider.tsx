@@ -1,5 +1,5 @@
 'use client'
-import { getCurrentUser } from "@/services/AuthService";
+import { getCurrentUser, getCurrentUserDetails } from "@/services/AuthService";
 import { IUser } from "@/types/user";
 
 import {
@@ -28,6 +28,8 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
   console.log('handleUser',isLoading)
   const handleUser = async () => {
     const user = await getCurrentUser();
+     const user2 = await getCurrentUserDetails();
+     console.log("user2",user2)
     setUser(user);
     setIsLoading(false);
   };

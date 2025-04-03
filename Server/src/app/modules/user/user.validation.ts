@@ -33,7 +33,7 @@ export const updateUserProfileSchema = z.object({
     phone: z.string().optional(),
     address: z.string().optional(),
     city: z.string().optional(),
-    image: z.string().url("Invalid image URL").optional(),
+    image: z.string().optional(),
   }),
 });
 

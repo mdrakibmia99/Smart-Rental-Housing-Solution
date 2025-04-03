@@ -1,212 +1,317 @@
-// const Profile = () => {
-//     return (
-//         <div>
-            
-//         </div>
-//     );
-// };
-
-// export default Profile;
+"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
+import Image from "next/image";
+import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormMessage,
+  FormControl,
+} from "@/components/ui/form";
+import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import {  getCurrentUserDetails, updateProfile } from "@/services/AuthService";
+import axios from "axios";
+import Loading from "@/app/loading";
+import { useUser } from "@/userContextApi/userProvider";
 
-const Profile = ({data}) => {
+// Zod schema for validation
+const profileSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email"),
+  phone: z.string().optional(),
+  city: z.string().optional(),
+  address: z.string().optional(),
+  password: z.string().optional(),
+  image: z.string().optional(),
+});
 
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
-  const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    profileImage: "",
-  });
-
-  const [passwords, setPasswords] = useState({
-    oldPassword: "",
-    newPassword: "",
-  });
-
+const Profile = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const { user } = useUser();
+  const [imagePreview, setImagePreview] = useState<File | null>(null);
+  const [userData, setUserData] = useState(null);
+const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      setProfile({
-        name: user?.data?.name || "",
-        email: user?.data?.email || "",
-        phone: user?.data?.phone || "",
-        address: user?.data?.address || "",
-        profileImage: user?.data?.profileImage || "",
-      });
+  // Initialize form with default values
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      city: user?.city || "",
+      address: user?.address || "",
+      image: (user?.image as any) || "",
+    },
+  });
+
+  const { reset } = form;
+
+
+
+useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const user = await getCurrentUserDetails();
+      console.log("user", user);
+      if (user) {
+        setUserData(user);
+        reset({
+          name: user?.name || "",
+          email: user?.email || "",
+          phone: user?.phone || "",
+          city: user?.city || "",
+          address: user?.address || "",
+          image: user?.image || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswords({ ...passwords, [e.target.name]: e.target.value });
-  };
+  fetchUser();
+}, [reset]);
+
+  if (isLoading) {
+    return <Loading />; // Ensure the page stops rendering until the user data is loaded
+  }
 
   const handleImageChange = (file: File) => {
-    setImage(file);
-    setImagePreview(URL.createObjectURL(file)); // Preview the selected image
+    setImagePreview(file); // Create a preview URL for the image
   };
 
-  const handleUpdateProfile = async () => {
-    if (!profile.name.trim() || !profile.phone.trim() || !profile.address.trim()) {
-      return toast.error("Fields cannot be empty!");
-    }
-    const toastId = toast.loading("Updating profile...");
-    let imageUrl = profile.profileImage;
+  const onSubmit = async (data: ProfileFormValues) => {
+    try {
+      let imageUrl = user?.image || "";
+      if (imagePreview) {
+        const formData = new FormData();
+        formData.append("file", imagePreview);
 
-    if (image) {
-      const formData = new FormData();
-      formData.append("file", image);
-      formData.append("upload_preset", "bikeStore");
+        formData.append("upload_preset", "bikeStore");
 
-      try {
-        const response = await fetch(
-          "https://api.cloudinary.com/v1_1/dlyvk0pgr/image/upload",
-          { method: "POST", body: formData }
+        const response = await axios.post(
+          "https://api.cloudinary.com/v1_1/dlyvk0pgr/image/upload", // Replace with your Cloudinary cloud name
+          formData
         );
-        const result = await response.json();
-        if (!result.secure_url) throw new Error("Image upload failed");
-        imageUrl = result.secure_url;
-      } catch (error) {
-        toast.error("Failed to upload image");
-        return;
+        // cloudirnay img url
+        imageUrl = response.data.secure_url;
       }
-    }
-
-    const res = await updateProfile({ ...profile, profileImage: imageUrl });
-    if (res?.data?.success) {
-      toast.success("Profile updated successfully", { id: toastId });
-      setIsEditingProfile(false);
-    } else {
-      toast.error("Failed to update profile", { id: toastId });
+  
+      const res = await updateProfile({ ...data, image: imageUrl });
+        console.log("resasaaaaaaa", res);
+      if (res?.success) {
+        toast.success(res.message);
+        setIsEditingProfile(false);
+        console.log("user aasdfa aaa");
+        reset({
+            name: data?.name || "",
+            email: data?.email || "",
+            phone: data?.phone || "",
+            city: data?.city || "",
+            address: data?.address || "",
+            image: imageUrl as any || "",
+          });
+        // window.location.reload();
+      } else {
+        toast.error(res.message);
+      }
+    } catch (error) {
+      toast.error("Something went wrong please try again.");
     }
   };
 
   const handleCancelProfileEdit = () => {
-    setProfile({
-      name: user?.data?.name || "",
-      email: user?.data?.email || "",
-      phone: user?.data?.phone || "",
-      address: user?.data?.address || "",
-      profileImage: user?.data?.profileImage || "",
-    });
-    setImage(null);
-    setImagePreview("");
     setIsEditingProfile(false);
   };
 
-  const handleSavePassword = async () => {
-    if (!passwords.oldPassword.trim() || !passwords.newPassword.trim()) {
-      return toast.error("Password fields cannot be empty!");
-    }
-    const toastId = toast.loading("Updating password...");
-    const res = await updatePassword(passwords);
-    if (res?.data?.success) {
-      toast.success("Password updated successfully", { id: toastId });
-      setIsEditingPassword(false);
-      setPasswords({ oldPassword: "", newPassword: "" });
-    } else if (res?.error) {
-      toast.error("Old Password is incorrect!", { id: toastId });
-    } else {
-      toast.error("Failed to update password", { id: toastId });
-    }
-  };
-
-  const handleCancelPasswordEdit = () => {
-    setPasswords({ oldPassword: "", newPassword: "" });
-    setIsEditingPassword(false);
-  };
-
-  if (isLoading) {
-    return <div className="text-center text-gray-600">Loading...</div>;
-  }
-
   return (
-    <div className="max-w-lg h-auto mb-5 overflow-y-auto mx-auto p-6">
-      {/* Profile Section */}
-      <Card>
-        <CardHeader className="flex items-center gap-4">
-          <Avatar className="w-20 h-20">
-            <AvatarImage
-              src={imagePreview || profile.profileImage || "https://via.placeholder.com/150"}
+    <div className="max-w-2xl w-full container mx-auto p-6 bg-white shadow-lg rounded mt-8 space-y-6 border">
+      {/* User Avatar */}
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Image
+          src={(user?.image as any) || "https://github.com/shadcn.png"}
+          alt="User Avatar"
+          width={100}
+          height={100}
+          className="w-24 h-24 rounded-full border border-cyan-900"
+        />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">{user?.name}</h2>
+          <p className="text-sm text-gray-500">Role: {user?.role}</p>
+          {user?.isBlocked ? (
+            <Button variant={"destructive"} className="mt-2">
+              Blocked
+            </Button>
+          ) : (
+            <Button variant={"outline"} className="mt-2">
+              Active
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Form */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="flex items-center justify-between gap-5">
+            {/* Name */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <Label>Name</Label>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter your name"
+                      {...field}
+                      disabled={!isEditingProfile}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <AvatarFallback>{profile.name?.charAt(0) || "U"}</AvatarFallback>
-          </Avatar>
-          <div>
-            <CardTitle>Profile Information</CardTitle>
+
+            {/* Email (Read-Only) */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <Label>Email</Label>
+                  <FormControl>
+                    <Input
+                      placeholder="Your email"
+                      {...field}
+                      value={field.value || ""}
+                      disabled={true}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <Label>Name</Label>
-          <Input
-            name="name"
-            required
-            value={profile.name}
-            onChange={handleInputChange}
-            disabled={!isEditingProfile}
-          />
 
-          <Label className="mt-2">Email</Label>
-          <Input name="email" value={profile.email} disabled={true} />
+          <div className="flex items-center justify-between gap-5">
+            {/* Phone */}
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <Label>Phone</Label>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter your phone number"
+                      {...field}
+                      value={field.value || ""}
+                      disabled={!isEditingProfile}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Label className="mt-2">Phone</Label>
-          <Input
-            name="phone"
-            value={profile.phone}
-            onChange={handleInputChange}
-            disabled={!isEditingProfile}
-          />
+            {/* City */}
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <Label>City</Label>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter your city"
+                      {...field}
+                      value={field.value || ""}
+                      disabled={!isEditingProfile}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-          <Label className="mt-2">Address</Label>
-          <Input
-            name="address"
-            value={profile.address}
-            onChange={handleInputChange}
-            disabled={!isEditingProfile}
-          />
+          <div className="flex items-center justify-between gap-5">
+            {/* Address Form Field */}
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <Label>Address</Label>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter your address"
+                      {...field}
+                      value={field.value || ""}
+                      disabled={!isEditingProfile}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Label className="mt-2">Profile Image</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                handleImageChange(file);
-              }
-            }}
-            disabled={!isEditingProfile}
-          />
+            {/* Conditional rendering of the Profile Image upload */}
+            {isEditingProfile && (
+              <>
+                <div className="w-full">
+                  <FormField
+                    control={form.control}
+                    name="image"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <Label>Profile Image</Label>
+                        <FormControl>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleImageChange(file); // Handle the file change
+                              }
+                            }}
+                            id="image-upload"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
-          {/* {imagePreview && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-500">Image Preview:</p>
-              <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-md" />
-            </div>
-          )} */}
-
+          {/* Submit Button */}
           {isEditingProfile ? (
             <div className="flex gap-4 mt-4">
-              <Button variant="outline" onClick={handleUpdateProfile}>
+              <Button variant="outline" className="rounded">
                 Save Changes
               </Button>
-              <Button variant="destructive" onClick={handleCancelProfileEdit}>
+              <Button
+                variant="destructive"
+                className="rounded"
+                onClick={handleCancelProfileEdit}
+              >
                 Cancel
               </Button>
             </div>
@@ -219,53 +324,8 @@ const Profile = ({data}) => {
               Edit Profile
             </Button>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Password Change Section */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Label>Old Password</Label>
-          <Input
-            type="password"
-            name="oldPassword"
-            value={passwords.oldPassword}
-            onChange={handlePasswordChange}
-            disabled={!isEditingPassword}
-          />
-
-          <Label className="mt-2">New Password</Label>
-          <Input
-            type="password"
-            name="newPassword"
-            value={passwords.newPassword}
-            onChange={handlePasswordChange}
-            disabled={!isEditingPassword}
-          />
-
-          {isEditingPassword ? (
-            <div className="flex gap-4 mt-4">
-              <Button variant="outline" onClick={handleSavePassword}>
-                Save Password
-              </Button>
-              <Button variant="destructive" onClick={handleCancelPasswordEdit}>
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <Button
-              className="mt-4"
-              variant="outline"
-              onClick={() => setIsEditingPassword(true)}
-            >
-              Edit Password
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        </form>
+      </Form>
     </div>
   );
 };
